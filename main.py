@@ -1,137 +1,16 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn import datasets
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.svm import SVC, SVR
-from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, classification_report, roc_curve, auc, mean_squared_error, r2_score
 from sklearn.cluster import KMeans, DBSCAN
 from sklearn.decomposition import PCA
-from keras.datasets import mnist
-
+from sklearn.model_selection import train_test_split
+from helper import load_classification_dataset, load_regression_dataset, load_clustering_dataset, select_classification_model, select_regression_model, exploratory_analyse, find_kind_of_task
 import time
 
-
-# Function to load classification datasets
-def load_classification_dataset(dataset_name, uploaded_file=None):
-    if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
-        X = df.iloc[:, :-1]
-        y = df.iloc[:, -1]
-        return X, y
-    elif dataset_name == "Iris":
-        dataset = datasets.load_iris()
-        X = dataset.data
-        y = dataset.target
-        return X, y
-    elif dataset_name == "Diabetes":
-        names = ['pregnant', 'glucose', 'blood_pressure', 'skin_thickness', 'insulin', 'bmi', 'diabetes_pedigree', 'age', 'outcome']
-        df = pd.read_csv('/home/rohith/Downloads/archive/diabetes.csv', names=names)
-        df = df.iloc[1:]
-        for i in df.columns:
-            df[i] = pd.to_numeric(df[i], errors='coerce')
-        X = df.drop('outcome', axis=1)
-        y = df['outcome']
-        return X, y
-    elif dataset_name == "MNIST":
-        (X, y), _ = mnist.load_data()
-        X = X.reshape(X.shape[0], -1)
-        X = X / 255.0
-        return X, y
-    else:
-        st.error("Invalid dataset selection!")
-        return None, None
-
-# Function to load regression datasets
-def load_regression_dataset(dataset_name, uploaded_file=None):
-    if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
-        X = df.iloc[:, :-1]
-        y = df.iloc[:, -1]
-        return X, y
-    elif dataset_name == "California Housing":
-        dataset = datasets.fetch_california_housing()
-        X = dataset.data
-        y = dataset.target
-        return X, y
-    else:
-        st.error("Invalid dataset selection!")
-        return None, None
-
-# Function to load clustering datasets
-def load_clustering_dataset(dataset_name, uploaded_file=None):
-    if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
-        X = df.iloc[:, :-1]
-        y = df.iloc[:, -1]
-        return X, y
-    elif dataset_name == "Iris":
-        dataset = datasets.load_iris()
-        X = dataset.data
-        y = dataset.target
-        return X, y
-    elif dataset_name == "Wine":
-        dataset = datasets.load_wine()
-        X = dataset.data
-        y = dataset.target
-        return X, y
-    elif dataset_name == "Breast Cancer":
-        dataset = datasets.load_breast_cancer()
-        X = dataset.data
-        y = dataset.target
-        return X, y
-    else:
-        st.error("Invalid dataset selection!")
-        return None, None
-
-# Function to select classification model
-def select_classification_model(model_name):
-    if model_name == "Random Forest":
-        model = RandomForestClassifier()
-        params = {
-            "n_estimators": [10, 50, 100],
-            "max_depth": [None, 5, 10, 20],
-            "min_samples_split": [2, 5, 10]
-        }
-    elif model_name == "SVM":
-        model = SVC(probability=True)
-        params = {
-            "C": [0.1, 1, 10, 100],
-            "gamma": [0.1, 1, 10, 100],
-            "kernel": ["rbf", "linear"]
-        }
-    else:
-        st.error("Invalid model selection!")
-        return None, None
-    return model, params
-
-# Function to select regression model
-def select_regression_model(model_name):
-    if model_name == "Random Forest":
-        model = RandomForestRegressor()
-        params = {
-            "n_estimators": [10, 50, 100],
-            "max_depth": [None, 5, 10, 20],
-            "min_samples_split": [2, 5, 10]
-        }
-    elif model_name == "SVM":
-        model = SVR()
-        params = {
-            "C": [0.1, 1, 10, 100],
-            "gamma": [0.1, 1, 10, 100],
-            "kernel": ["rbf", "linear"]
-        }
-    elif model_name == "Linear Regression":
-        model = LinearRegression()
-        params = {}
-    else:
-        st.error("Invalid model selection!")
-        return None, None
-    return model, params
+st.set_option('deprecation.showPyplotGlobalUse', False)
 
 # Main function
 def main():
@@ -155,15 +34,15 @@ def main():
         st.write("Upload your dataset as a CSV file. The file should have features in columns and the target variable as the last column.")
         
         uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-        print(uploaded_file)
         if uploaded_file is not None:
             st.write("### File Preview")
             df = pd.read_csv(uploaded_file)
             st.write(df.head())
-            print(df.head())
-            
-            task = st.selectbox("Select Task", ["Classification", "Regression", "Clustering"])
-            
+            explore_data = st.sidebar.checkbox("Explore Data")
+            if explore_data:
+                exploratory_analyse(df)
+
+            task = find_kind_of_task(df)
             if task == "Classification":
                 st.sidebar.subheader("Select Model")
                 model_name = st.sidebar.selectbox("Select Model", ["Random Forest", "SVM"])
@@ -243,7 +122,7 @@ def main():
                 model_name = st.sidebar.selectbox("Select Model", ["Random Forest", "SVM", "Linear Regression"])
                 
                 # Load regression dataset
-                X, y = load_regression_dataset(None, uploaded_file)
+                X, y = df.iloc[:, :-1], df.iloc[:, -1]
                 
                 # Select regression model
                 model, params = select_regression_model(model_name)
@@ -442,25 +321,7 @@ def main():
                     ax.set_title(f"Digit: {y[i]}")
                 st.pyplot(fig)
             else:
-                st.subheader("Exploratory Data Analysis")
-                st.write("### Displaying DataFrame")
-                st.write(pd.DataFrame(X, columns=[f'Feature {i}' for i in range(X.shape[1])]))
-
-                st.write("### Summary Statistics")
-                df = pd.DataFrame(X)
-                st.write(df.describe())
-
-                st.write("### Data Visualization")
-                st.write("#### Pairplot")
-                st.set_option('deprecation.showPyplotGlobalUse', False)
-                sns.pairplot(pd.DataFrame(X, columns=[f'Feature {i}' for i in range(X.shape[1])]))
-                st.pyplot()
-
-                st.write("#### Correlation Heatmap")
-                correlation_matrix = df.corr()
-                plt.figure(figsize=(12, 8))
-                sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm')
-                st.pyplot()
+                exploratory_analyse(pd.DataFrame(X, columns=[f'Feature {i}' for i in range(X.shape[1])]))   
 
     elif page == "Regression":
         st.title("Regression Models")
@@ -518,6 +379,11 @@ def main():
         plt.ylabel('Predicted')
         plt.title('Predictions vs Actual Values')
         st.pyplot(plt)
+
+        explore_data = st.sidebar.checkbox("Explore Data")
+        if explore_data:
+            exploratory_analyse(pd.DataFrame(X, columns=[f'Feature {i}' for i in range(X.shape[1])]))
+
 
     elif page == "Clustering":
         st.title("Clustering Models")
