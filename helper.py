@@ -24,7 +24,7 @@ def load_classification_dataset(dataset_name, uploaded_file=None):
         return X, y
     elif dataset_name == "Diabetes":
         names = ['pregnant', 'glucose', 'blood_pressure', 'skin_thickness', 'insulin', 'bmi', 'diabetes_pedigree', 'age', 'outcome']
-        df = pd.read_csv('/Datasets/diabetes.csv', names=names)
+        df = pd.read_csv(r'Datasets/diabetes.csv', names=names)
         df = df.iloc[1:]
         for i in df.columns:
             df[i] = pd.to_numeric(df[i], errors='coerce')
