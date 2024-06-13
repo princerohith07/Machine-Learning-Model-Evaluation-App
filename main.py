@@ -17,7 +17,7 @@ def main():
     st.sidebar.title("Machine Learning Model Evaluation")
     
     # Sidebar - Page selection
-    page = st.sidebar.selectbox("Select Page", ["Home", "Classification", "Regression", "Clustering", "Upload Your Own Dataset"])
+    page = st.sidebar.selectbox("Select Page", ["Home", "Classification", "Regression", "Clustering"])
     
     if page == "Home":
         st.title("Welcome to Machine Learning Model Evaluation App")
@@ -26,10 +26,8 @@ def main():
         - Classification
         - Regression
         - Clustering
-        - Upload Your Own Dataset
         """)
     
-    elif page == "Upload Your Own Dataset":
         st.title("Upload Your Own Dataset")
         st.write("Upload your dataset as a CSV file. The file should have features in columns and the target variable as the last column.")
         
